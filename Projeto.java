@@ -1,20 +1,51 @@
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.*;
+
+
+class Graph{
+    private int numVertices;
+    private LinkedList<Integer> adjLists[];
+
+    Graph(int vertices)
+    {
+        numVertices = vertices;
+        adjLists = new LinkedList[vertices];
+    
+        for (int i = 0; i < vertices; i++)
+            adjLists[i] = new LinkedList();
+    }
+
+    void addEdge(int src, int dest)
+    {
+        adjLists[src].add(dest);
+        adjLists[dest].add(src);
+    }
+
+    int getLenght(int i){
+        return adjLists[i].size();
+    }
+
+    int getAdj(int i, int j){
+        return adjLists[i].get(j);
+    }
+}
 
 public class Projeto{
 
-    public static void dfs(int i, int[][] graph, boolean[] visited, ArrayList<Integer> subgraph) {
+
+    public static void dfs(int i, Graph graph, boolean[] visited, ArrayList<Integer> subgraph) {
         if(!visited[i]){        
             visited[i] = true; // Mark node as "visited"
             subgraph.add(i+1);
-    
-            for (int j = 0; j < graph[i].length; j++) {
-                if (graph[i][j]==1 && !visited[j]) {   
-                    dfs(j, graph, visited, subgraph); // Visit node
+            for (int j = 0; j < graph.getLenght(i); j++) {
+                int curr = graph.getAdj(i,j);
+                if (!visited[curr]) {   
+                    dfs(curr, graph, visited, subgraph); // Visit node
                 }
             }
         }   
@@ -33,25 +64,16 @@ public class Projeto{
         try{
             st.nextToken();
             numOfRouters = (int) st.nval;
-            int[][] matrix = new int[numOfRouters][numOfRouters];
+            Graph graph = new Graph(numOfRouters);
             st.nextToken();
             numOfCon = (int) st.nval;
             
             for(int i = 0; i < numOfCon; i++){
                 st.nextToken();
-                x = (int) st.nval -1;
+                x = (int) st.nval-1;
                 st.nextToken();
-                y = (int) st.nval -1;
-                matrix[x][y]= 1;
-                matrix[y][x]= 1;
-            }
-            System.out.println(numOfRouters);
-            System.out.println(numOfCon);
-
-            for(int i = 0; i< numOfRouters; i++){
-                for(int j = 0; j<numOfRouters; j++)
-                    System.out.print(matrix[i][j]);
-                System.out.println();
+                y = (int) st.nval-1;
+                graph.addEdge(x, y);
             }
             
             boolean [] visited = new boolean[numOfRouters];
@@ -60,16 +82,20 @@ public class Projeto{
             int count = 0;
             for(int i = 0; i < numOfRouters; i++) {
                 if(!visited[i]) {
-                    dfs(i,matrix,visited,subgraph);
+                    dfs(i,graph,visited,subgraph);
+                    
                     r.add(Collections.max(subgraph));
                     subgraph = new ArrayList<Integer>();
                     ++count;
                 }
             }
-            System.out.println(count);
+            //OUTPUT
+            BufferedWriter log = new BufferedWriter(new OutputStreamWriter(System.out));
+            log.write(count + "\n");
             for(int i = 0; i < count; i++)
-                System.out.print(r.get(i) + " ");
-            System.out.println();
+                log.write(r.get(i) + " ");
+            log.write("\n");
+            log.close();
             
         }
         catch (IOException e){}
