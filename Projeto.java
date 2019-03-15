@@ -9,12 +9,21 @@ import java.util.*;
 
 class Graph{
     private int numVertices;
+    private ArrayList<Integer> artPts = new ArrayList<Integer>();
     private List<LinkedList<Integer>> adjLists;
+    private int [] visited;
+    private int [] parent;
+    private int [] low;
 
     Graph(int vertices)
     {
         numVertices = vertices;
         adjLists = new ArrayList<LinkedList<Integer>>();
+        visited = new int[vertices];
+        parent = new int[vertices];
+        low = new int[vertices];
+
+        Arrays.fill(visited, -1);
     
         for (int i = 0; i < vertices; i++)
             adjLists.add(new LinkedList<Integer>());
@@ -26,29 +35,81 @@ class Graph{
         adjLists.get(dest).add(src);
     }
 
-    int getLenght(int i){
+    int getLength(int i){
         return adjLists.get(i).size();
     }
 
     int getAdj(int i, int j){
         return adjLists.get(i).get(j);
     }
+
+    void addArtPt(int i){
+        artPts.add(i);
+    }
+
+    int getVisited(int i){
+        return visited[i];
+    }
+
+    int getParent(int i){
+        return parent[i];
+    }
+
+    int getLow(int i){
+        return low[i];
+    }
+
+    void setLow(int v, int l){
+        low[v] = l;
+    }
+
+    void setVisited(int v, int t){
+        visited[v] = t;
+    }
+
+    void setParent(int v, int p){
+        parent[v] = p;
+    }
+
+    int getArtPtsSize(){
+        return artPts.size();
+    }
 }
 
 public class Projeto{
 
 
-    public static void dfs(int i, Graph graph, boolean[] visited, ArrayList<Integer> subgraph) {
-        if(!visited[i]){        
-            visited[i] = true;
+    public static void dfs(int i, int p, Graph graph, int time, ArrayList<Integer> subgraph) {
+        if(graph.getVisited(i)<0){  
+            graph.setVisited(i, time);
+            graph.setLow(i, time);
+            graph.setParent(i, p);      
+
             subgraph.add(i+1);
-            for (int j = 0; j < graph.getLenght(i); j++) {
+
+            for (int j = 0; j < graph.getLength(i); j++) {
                 int curr = graph.getAdj(i,j);
-                if (!visited[curr]) {   
-                    dfs(curr, graph, visited, subgraph);
+                if (graph.getVisited(curr)<0) {   
+                    dfs(curr, i, graph, ++time, subgraph);
+                }
+                else{
+                    int adj = curr;
+
+                    if(graph.getLow(adj)<graph.getLow(i)){
+                        graph.setLow(i, graph.getLow(adj));
+                    }
+
+                    while(graph.getLow(adj)<graph.getLow(i)){
+                        if(graph.getVisited(i) <= graph.getLow(curr)){
+                            graph.addArtPt(i);
+                        }
+                        graph.setLow(i, graph.getLow(adj));
+                        adj = i;
+                        i = graph.getParent(adj);
+                    }
                 }
             }
-        }   
+        }
     }
     public static void main(String[] args){
         
@@ -75,15 +136,14 @@ public class Projeto{
                 y = (int) st.nval-1;
                 graph.addEdge(x, y);
             }
-            
-            boolean [] visited = new boolean[numOfRouters];
+
             ArrayList<Integer> subgraph = new ArrayList<Integer>(); //para colocar os elementos de cada subrede
             ArrayList<Integer> r = new ArrayList<Integer>(); //R (maiores indentificadores de cada subrede)
             int count = 0;
+
             for(int i = 0; i < numOfRouters; i++) {
-                if(!visited[i]) {
-                    dfs(i,graph,visited,subgraph);
-                    
+                if(graph.getVisited(i)<0) {
+                    dfs(i, -1, graph, 0, subgraph);
                     r.add(Collections.max(subgraph));
                     subgraph = new ArrayList<Integer>();
                     ++count;
