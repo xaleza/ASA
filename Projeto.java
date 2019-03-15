@@ -9,29 +9,29 @@ import java.util.*;
 
 class Graph{
     private int numVertices;
-    private LinkedList<Integer> adjLists[];
+    private List<LinkedList<Integer>> adjLists;
 
     Graph(int vertices)
     {
         numVertices = vertices;
-        adjLists = new LinkedList[vertices];
+        adjLists = new ArrayList<LinkedList<Integer>>();
     
         for (int i = 0; i < vertices; i++)
-            adjLists[i] = new LinkedList();
+            adjLists.add(new LinkedList<Integer>());
     }
 
     void addEdge(int src, int dest)
     {
-        adjLists[src].add(dest);
-        adjLists[dest].add(src);
+        adjLists.get(src).add(dest);
+        adjLists.get(dest).add(src);
     }
 
     int getLenght(int i){
-        return adjLists[i].size();
+        return adjLists.get(i).size();
     }
 
     int getAdj(int i, int j){
-        return adjLists[i].get(j);
+        return adjLists.get(i).get(j);
     }
 }
 
@@ -40,12 +40,12 @@ public class Projeto{
 
     public static void dfs(int i, Graph graph, boolean[] visited, ArrayList<Integer> subgraph) {
         if(!visited[i]){        
-            visited[i] = true; // Mark node as "visited"
+            visited[i] = true;
             subgraph.add(i+1);
             for (int j = 0; j < graph.getLenght(i); j++) {
                 int curr = graph.getAdj(i,j);
                 if (!visited[curr]) {   
-                    dfs(curr, graph, visited, subgraph); // Visit node
+                    dfs(curr, graph, visited, subgraph);
                 }
             }
         }   
