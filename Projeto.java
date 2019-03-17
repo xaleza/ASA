@@ -85,75 +85,74 @@ class Graph{
 }
 
 public class Projeto{
-    private static int nIndChildren = 0;
     private static int currLow = 0;
     private static int maxLow = 0;
 
     public static void dfs(int i, int p, Graph graph, int time, ArrayList<Integer> subgraph) {
         if(graph.getVisited(i)<0){  
             graph.setVisited(i, time);
-            graph.setLow(i, time);
-            graph.setParent(i, p);      
+            graph.setLow(i, time);     
 
             subgraph.add(i+1);
 
-            if(p>=0 && graph.getParent(p)==-1)
-                nIndChildren++;
+            int nIndChildren = 0;
 
-            for (int j = 0; j < graph.getLength(i); j++) {
+            System.out.println("running dfs for " + i + " whose parent is " + p);
+
+            for (int j = 0; j < graph.getLength(i); j++) {//enqt ha um proximo
                 int curr = graph.getAdj(i,j);
 
-                if(curr!=p){
-                    if (graph.getVisited(curr)<0) {  //next ainda n foi visitado 
-                        dfs(curr, i, graph, ++time, subgraph);
-                    }
-                    else{//next ja foi visitado
-                        int adj = curr;
-                        int prnt = i;
+                System.out.println("finding adjacency no." + j + " for vertex " + i);
 
-                        traceback(prnt, adj, graph);
-                        if(currLow>maxLow)
-                            maxLow = currLow;
-                        currLow = 0;
+                if(graph.getVisited(curr)<0){//next ainda n foi visitado
+                    nIndChildren++;
+
+                    System.out.println("setting vertex " + curr + "s parent as " + i);
+                    graph.setParent(curr, i); 
+
+                    System.out.println("adjacency no." + j + " for vertex " + i + " had not been visited yet");
+                    
+                    dfs(curr, i, graph, ++time, subgraph);
+
+                    //temos que estar no atual e ver o filho
+
+                    if(graph.getLow(curr)<graph.getLow(i)){
+                        graph.setLow(i, graph.getLow(curr));
+                        currLow++;
+                        System.out.println("1. setting low for " + i + " as " + graph.getLow(curr) + " by son " + curr);
+                    }
+
+                    if(graph.getVisited(i)<=graph.getLow(curr) && p>=0 && !graph.isArtPt(i)){
+                        System.out.println("" + i + " isnt root and is now ArtPt");
+                        graph.addArtPt(i);
+                        graph.setLow(curr, graph.getLow(i));
+                        currLow++;
+                    }
+
+                    if(nIndChildren >= 2 && p<0 && !graph.isArtPt(i)){
+                        System.out.println("" + i + " is root and is now ArtPt");
+                        graph.addArtPt(i);
                     }
                 }
+                
+                else if (curr!=graph.getParent(i)){//next ja foi visitado
+                    System.out.println("adjacency no." + j + " for vertex " + i + " had been visited and isnt its parent");
+                    if(graph.getLow(curr)<graph.getLow(i)){
+                        System.out.println("2. setting low for " + i + " as " + graph.getLow(curr) + " by son " + curr );
+                        graph.setLow(i, graph.getLow(curr));
+                        currLow++;
+                    }
+                }
+                else
+                    System.out.println("adjacency no." + j + " for vertex " + i + " had been visited and is its parent");
             }
-            traceback(p, i, graph);
-            
-            if(currLow>maxLow)
+
+            if(currLow > maxLow)
                 maxLow = currLow;
             currLow = 0;
+        }
             
         }
-
-    }
-
-    public static void traceback(int prnt, int child, Graph graph){
-
-        while(prnt >=0){
-
-            if(graph.getLow(child)<graph.getLow(prnt)){
-                graph.setLow(prnt, graph.getLow(child));
-                currLow++;
-            }
-
-            if(graph.getVisited(prnt)<=graph.getLow(child) && 
-            !graph.isArtPt(prnt) && graph.getParent(prnt)>=0){
-                graph.addArtPt(prnt);
-                graph.setLow(child, graph.getLow(prnt));
-                currLow++;
-                return;
-            }
-
-            child = prnt;
-            prnt = graph.getParent(prnt);
-        }
-
-        if(nIndChildren >= 2 && !graph.isArtPt(child)){
-            graph.addArtPt(child);
-        }
-        
-    }
 
 
     public static void main(String[] args){
@@ -192,7 +191,6 @@ public class Projeto{
                     r.add(Collections.max(subgraph));
                     subgraph = new ArrayList<Integer>();
                     ++count;
-                    nIndChildren = 0;
                 }
             }
             //OUTPUT
