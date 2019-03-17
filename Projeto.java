@@ -194,9 +194,13 @@ public class Projeto{
             }
             //OUTPUT
             BufferedWriter log = new BufferedWriter(new OutputStreamWriter(System.out));
+            Collections.sort(r);
             log.write(count + "\n");
-            for(int i = 0; i < count; i++)
-                log.write(r.get(i) + " ");
+
+
+            log.write(""+ r.get(0));
+            for(int i = 1; i < count; i++)
+                log.write(" " + r.get(i));
             
             log.write("\n");
             log.write(graph.getArtPtsSize()+ "\n");
