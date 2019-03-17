@@ -86,6 +86,8 @@ class Graph{
 
 public class Projeto{
     private static int nIndChildren = 0;
+    private static int currLow = 0;
+    private static int maxLow = 0;
 
     public static void dfs(int i, int p, Graph graph, int time, ArrayList<Integer> subgraph) {
         if(graph.getVisited(i)<0){  
@@ -110,10 +112,17 @@ public class Projeto{
                         int prnt = i;
 
                         traceback(prnt, adj, graph);
+                        if(currLow>maxLow)
+                            maxLow = currLow;
+                        currLow = 0;
                     }
                 }
             }
             traceback(p, i, graph);
+            
+            if(currLow>maxLow)
+                maxLow = currLow;
+            currLow = 0;
             
         }
 
@@ -122,13 +131,17 @@ public class Projeto{
     public static void traceback(int prnt, int child, Graph graph){
 
         while(prnt >=0){
+
             if(graph.getLow(child)<graph.getLow(prnt)){
                 graph.setLow(prnt, graph.getLow(child));
+                currLow++;
             }
 
             if(graph.getVisited(prnt)<=graph.getLow(child) && 
             !graph.isArtPt(prnt) && graph.getParent(prnt)>=0){
                 graph.addArtPt(prnt);
+                graph.setLow(child, graph.getLow(prnt));
+                currLow++;
                 return;
             }
 
@@ -140,16 +153,6 @@ public class Projeto{
             graph.addArtPt(child);
         }
         
-    }
-
-    public static int getMaxSubgraphSize(int i, Graph graph){
-        int max = -1;
-        for (int j = 0; j < graph.getLength(i); j++){
-            int curr = graph.getAdj(i,j);
-            if(curr!=graph.getParent(i) && !graph.isArtPt(curr) && graph.getLength(curr)>max)
-                max = graph.getLength(curr);
-        }
-        return max;
     }
 
 
@@ -205,16 +208,8 @@ public class Projeto{
             log.write("\n");
             log.write(graph.getArtPtsSize()+ "\n");
 
-            int maxArtPt = -1;
-            int currArtPt;
 
-            for(int i=0; i<graph.getArtPtsSize(); i++){
-                currArtPt = graph.getArtPt(i);
-                if(getMaxSubgraphSize(currArtPt, graph)>maxArtPt)
-                    maxArtPt = getMaxSubgraphSize(currArtPt, graph);
-            }
-
-            log.write("" + maxArtPt + "\n");
+            log.write("" + maxLow + "\n");
             log.close();
             
         }
