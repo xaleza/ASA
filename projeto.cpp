@@ -2,7 +2,11 @@
 #include <list> 
 #include <iterator>
 #include <algorithm>
+#include <set>
 using namespace std; 
+
+
+int currTime = 0;
 
 struct Node
 { 
@@ -18,7 +22,7 @@ class linkedList
     public:
     linkedList()
     {
-        length = 0;
+      length = 0;
       head=NULL;
       tail=NULL;
     }
@@ -67,11 +71,12 @@ class Graph
 private:
     /* data */
     int numVertices;
-    std::vector<int> artPts;
+    std::set<int> artPts;
     std::vector<linkedList> adjLists;
     std::vector<int> visited;
     std::vector<int> parent;
     std::vector<int> low;
+    std::vector<int> lowCtr;
    
 public:
     Graph(int vertices)
@@ -81,12 +86,14 @@ public:
         visited.resize(vertices);
         parent.resize(vertices);
         low.resize(vertices);
+        lowCtr.resize(vertices);
         
         for(int i = 0; i < vertices; i++)
         {
             visited[i] = -1;
             parent[i] = -1;
             low[i] = -1;
+            lowCtr[i] = 0;
         }
 
     }
@@ -110,7 +117,7 @@ public:
 
     void addArtPt(int i)
     {
-        artPts.push_back(i);
+        artPts.insert(i);
     }
 
     int getVisited(int i)
@@ -129,8 +136,11 @@ public:
     }
 
     void setLow(int v, int l)
-    {
+    {   
+        if(low[v]>0)
+            decLowCtr(low[v]);
         low[v] = l;
+        incLowCtr(l);
     }
 
     void setVisited(int v, int t)
@@ -150,24 +160,41 @@ public:
 
     bool isArtPt(int i)
     {
-        return (std::find(artPts.begin(), artPts.end(), i) != artPts.end());
+        return artPts.find(i) != artPts.end();
     }
 
-    int getArtPt(int i)
-    {
-        return artPts[i];
+    void incLowCtr(int i){
+        int newLow = lowCtr[i]+1;
+        lowCtr[i] = newLow;
     }
+
+    void decLowCtr(int i){
+        int newLow = lowCtr[i]-1;
+        lowCtr[i] = newLow;
+    }
+
+    int getMaxLow(){
+        int max=0, curr=0;
+
+        for(int i=0; i<numVertices; i++){
+            curr = lowCtr[i];
+            if(curr>max)
+                max = curr;
+        }
+
+        return max;
+        
+    }
+    
 };
 
 int currLow = 0;
 int maxLow = 0;
 
-void dfs(int i, int p, Graph &graph, int time, std::vector<int> &subgraph)
+void dfs(int i, int p, Graph &graph, std::vector<int> &subgraph)
 {
-    if(graph.getVisited(i)<0)
-    {  
-            graph.setVisited(i, time);
-            graph.setLow(i, time);     
+            graph.setVisited(i, currTime);
+            graph.setLow(i, currTime);     
 
             subgraph.push_back(i+1);
 
@@ -183,20 +210,18 @@ void dfs(int i, int p, Graph &graph, int time, std::vector<int> &subgraph)
 
                     graph.setParent(curr, i); 
                     
-                    dfs(curr, i, graph, ++time, subgraph);
+                    ++currTime;
+                    dfs(curr, i, graph, subgraph);
 
                     //temos que estar no atual e ver o filho
 
                     if(graph.getLow(curr)<graph.getLow(i))
                     {
                         graph.setLow(i, graph.getLow(curr));
-                        currLow++;
                     }
 
                     if(graph.getVisited(i)<=graph.getLow(curr) && p>=0 && !graph.isArtPt(i)){
                         graph.addArtPt(i);
-                        graph.setLow(curr, graph.getLow(i));
-                        currLow++;
                     }
 
                     if(nIndChildren >= 2 && p<0 && !graph.isArtPt(i)){
@@ -205,17 +230,12 @@ void dfs(int i, int p, Graph &graph, int time, std::vector<int> &subgraph)
                 }
                 
                 else if (curr!=graph.getParent(i)){//next ja foi visitado
-                    if(graph.getLow(curr)<graph.getLow(i)){
-                        graph.setLow(i, graph.getLow(curr));
-                        currLow++;
+                    if(graph.getVisited(curr)<graph.getLow(i)){
+                        graph.setLow(i, graph.getVisited(curr));
                     }
                 }
             }
 
-            if(currLow > maxLow)
-                maxLow = currLow;
-            currLow = 0;
-        }
 }
 
 int main()
@@ -245,18 +265,19 @@ int main()
     {
         if(graph.getVisited(i)<0)
         {
-            dfs(i, -1, graph, 0, subgraph);
+            dfs(i, -1, graph, subgraph);
             r.push_back(*max_element(subgraph.begin(),subgraph.end()));
             subgraph.clear();
             ++count;
         }
     }
 
+    std::sort(r.begin(), r.end());
     printf("%d\n", count);
     printf("%d", r[0]);
     for(int i = 1; i < count; i++)
         printf(" %d", r[i]);
-    printf("\n%d\n%d\n", graph.getArtPtsSize(), maxLow);
+    printf("\n%d\n%d\n", graph.getArtPtsSize(), graph.getMaxLow());
 
     return 0;
 }
