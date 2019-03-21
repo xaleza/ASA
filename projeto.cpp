@@ -8,63 +8,6 @@ using namespace std;
 
 int currTime = 0;
 
-struct Node
-{ 
-    int data; 
-    struct Node *next; 
-}; 
-
-class linkedList
-{
-    private:
-    Node *head, *tail;
-    int length;
-    public:
-    linkedList()
-    {
-      length = 0;
-      head=NULL;
-      tail=NULL;
-    }
-
-    void createNode(int value)
-    {
-        length++;
-        Node *temp=new Node;
-        temp->data=value;
-        temp->next=NULL;
-        if(head==NULL)
-        {
-            head=temp;
-            tail=temp;
-            temp=NULL;
-        }
-        else
-        {	
-            tail->next=temp;
-            tail=temp;
-        }
-    }
-
-    int getValue(int pos)
-    {
-        Node *temp = new Node;
-        int i = 0;
-        temp = head;
-        for(i=0; i<pos; i++)
-        {
-            temp = temp->next;
-        }
-        return temp->data;
-    }
-
-    int getLength()
-    {
-        return length;
-    }
-  };
-
-
 
 class Graph
 {
@@ -72,11 +15,10 @@ private:
     /* data */
     int numVertices;
     std::set<int> artPts;
-    std::vector<linkedList> adjLists;
+    std::vector<vector<int> > adjLists;
     std::vector<int> visited;
     std::vector<int> parent;
     std::vector<int> low;
-    std::vector<int> lowCtr;
    
 public:
     Graph(int vertices)
@@ -86,14 +28,12 @@ public:
         visited.resize(vertices);
         parent.resize(vertices);
         low.resize(vertices);
-        lowCtr.resize(vertices);
         
         for(int i = 0; i < vertices; i++)
         {
             visited[i] = -1;
             parent[i] = -1;
             low[i] = -1;
-            lowCtr[i] = 0;
         }
 
     }
@@ -101,18 +41,18 @@ public:
 
     void addEdge(int src, int dest)
     {
-        adjLists[src].createNode(dest);
-        adjLists[dest].createNode(src);
+        adjLists[src].push_back(dest);
+        adjLists[dest].push_back(src);
     }
 
     int getLength(int i)
     {
-        return adjLists[i].getLength();
+        return adjLists[i].size();
     }
 
     int getAdj(int i, int j)
     {
-        return adjLists[i].getValue(j);
+        return adjLists[i][j];
     }
 
     void addArtPt(int i)
@@ -137,10 +77,7 @@ public:
 
     void setLow(int v, int l)
     {   
-        if(low[v]>0)
-            decLowCtr(low[v]);
         low[v] = l;
-        incLowCtr(l);
     }
 
     void setVisited(int v, int t)
@@ -163,33 +100,14 @@ public:
         return artPts.find(i) != artPts.end();
     }
 
-    void incLowCtr(int i){
-        int newLow = lowCtr[i]+1;
-        lowCtr[i] = newLow;
-    }
-
-    void decLowCtr(int i){
-        int newLow = lowCtr[i]-1;
-        lowCtr[i] = newLow;
-    }
-
-    int getMaxLow(){
-        int max=0, curr=0;
-
+    void clearVisited()
+    {
         for(int i=0; i<numVertices; i++){
-            curr = lowCtr[i];
-            if(curr>max)
-                max = curr;
+            visited[i] = -1;
         }
-
-        return max;
-        
     }
-    
+  
 };
-
-int currLow = 0;
-int maxLow = 0;
 
 void dfs(int i, int p, Graph &graph, std::vector<int> &subgraph)
 {
@@ -238,6 +156,22 @@ void dfs(int i, int p, Graph &graph, std::vector<int> &subgraph)
 
 }
 
+void dfs2(int i, int p, Graph &graph, std::vector<int> &subgraph){
+    graph.setVisited(i, 1);   
+
+    subgraph.push_back(i+1);
+
+    for (int j = 0; j < graph.getLength(i); j++) 
+    {//enqt ha um proximo
+        int curr = graph.getAdj(i,j);
+
+        if(graph.getVisited(curr)<0 && !graph.isArtPt(curr))
+        {//next ainda n foi visitado
+            dfs2(curr, i, graph, subgraph); 
+        }
+    }
+}
+
 int main()
 {
     int numOfRouters = 0;
@@ -260,6 +194,7 @@ int main()
     std::vector<int> subgraph;
     std::vector<int> r;
     int count = 0;
+    int maxSubgraph = 0, currSubgraph = 0;
 
     for(int i = 0; i < numOfRouters; i++)
     {
@@ -268,7 +203,23 @@ int main()
             dfs(i, -1, graph, subgraph);
             r.push_back(*max_element(subgraph.begin(),subgraph.end()));
             subgraph.clear();
+            subgraph.shrink_to_fit();
             ++count;
+        }
+    }
+    
+    graph.clearVisited();
+
+    for(int i = 0; i < numOfRouters; i++)
+    {
+        if(graph.getVisited(i)<0 && !graph.isArtPt(i))
+        {
+            dfs2(i, -1, graph, subgraph);
+            currSubgraph = subgraph.size();
+            if(currSubgraph>maxSubgraph)
+                maxSubgraph = currSubgraph;
+            subgraph.clear();
+            subgraph.shrink_to_fit();
         }
     }
 
@@ -277,9 +228,7 @@ int main()
     printf("%d", r[0]);
     for(int i = 1; i < count; i++)
         printf(" %d", r[i]);
-    printf("\n%d\n%d\n", graph.getArtPtsSize(), graph.getMaxLow());
+    printf("\n%d\n%d\n", graph.getArtPtsSize(), maxSubgraph);
 
     return 0;
 }
-
-
