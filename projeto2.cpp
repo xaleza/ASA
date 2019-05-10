@@ -24,7 +24,6 @@ struct Vertex
 struct Edge
 {
 	int cap, cf; //capacidade e capacidade restante
-	bool forward;
 	
 	Edge(int cap, int cf)
 	{
@@ -37,10 +36,12 @@ struct Neighbour
 {
 	int vertex;
 	int edgeIndex;
-	Neighbour(int vertex, int edgeIndex)
+	bool forward;
+	Neighbour(int vertex, int edgeIndex, bool forward)
 	{
 		this->vertex = vertex;
 		this->edgeIndex = edgeIndex;
+		this->forward = forward;
 	}
 };
 
@@ -73,8 +74,8 @@ public:
 	{
 		edges.push_back(Edge(cap,cap));
 
-		neighbours[u].push_back(Neighbour(v,edges.size()-1));
-		neighbours[v].push_back(Neighbour(u,edges.size()-1));
+		neighbours[u].push_back(Neighbour(v,edges.size()-1,true));
+		neighbours[v].push_back(Neighbour(u,edges.size()-1,false));
 	}
 
 	void addStation(int i, int inc, int j)
@@ -158,7 +159,7 @@ public:
 		{
 			vertices[getNeighbourVertex(s,i)].pre_flow = edges[getEdgeIndex(s, i)].cap;
 			vertices[s].pre_flow -= edges[getEdgeIndex(s, i)].cap;
-			edges[getEdgeIndex(s,i)].cf -= edges[getEdgeIndex(s, i)].cap; 
+			edges[getEdgeIndex(s,i)].cf =0;
 		}
 	}
 
@@ -167,7 +168,7 @@ public:
 		int min = 9999;
 		for(int i = 0; i < getLength(u); i++)
 		{
-			if(vertices[neighbours[u][i].vertex].h < min && (edges[getEdgeIndex(u,i)].cf > 0 || u > getNeighbourVertex(u,i)))
+			if(vertices[neighbours[u][i].vertex].h < min && (getCf(getEdgeIndex(u,i)) > 0 || !neighbours[u][i].forward))
 				min = vertices[neighbours[u][i].vertex].h;
 		}
 		vertices[u].h = min +1;
@@ -178,7 +179,7 @@ public:
 		int flow;
 		int edgeIndex= getEdgeIndex(u, index);
 		
-		if(u < getNeighbourVertex(u, index))
+		if(neighbours[u][index].forward)
 		{
 			flow = getCf(edgeIndex) ^ ((getPreflow(u) ^ getCf(edgeIndex)) & -(getPreflow(u) < getCf(edgeIndex)));
 			edges[edgeIndex].cf -= flow;
@@ -198,7 +199,6 @@ public:
 	void discharge(int u)
 	{
 		int index=0, v;
-		int i=0;
 		while(getPreflow(u)>0)
 		{
 			//chegou ao fim da lista de vizinhos
@@ -226,10 +226,10 @@ public:
 		
 		for(int i = 0; i < numVertices - 2; i++)
 			L[i] = i+1;
+		
 		u = L[0];
 		while(index < numVertices-2)
 		{	
-			
 			oldh = getHeight(u);
 			discharge(u);
 			if(vertices[u].h > oldh)
@@ -276,46 +276,39 @@ public:
 					hasVisitedCh= true;
 				}
 			}
-			if(!hasVisitedCh){
+			if(!hasVisitedCh)
+			{
 				if(!isStationEntry(curr))
 					lastStations.push_back(curr);
 				else
 					lastVertices.push_back(curr);
 			}
+			std::sort(lastStations.begin(), lastStations.end());
+			
+			if(lastStations.size()>0)
+				printf("%d", lastStations[0]);
+	
+			for(int i = 1; i < lastStations.size(); i++)
+				printf(" %d", lastStations[i]);
+
+			printf("\n");
 			
 		}
-
-		// for(int i = 0; i < numVertices; i++){
-		// 	if(visited[i])
-
-
-		// 	printf("i = %d, bool %d; ", i, visited[i]);
-		//}
-		// std::sort(lastStations.begin(), lastStations.end());
-			
-		// 	if(lastStations.size()>0)
-		// 		printf("%d", lastStations[0]);
-	
-		// 	for(int i = 1; i < lastStations.size(); i++)
-		// 		printf(" %d", lastStations[i]);
-
-		// 	printf("\n");
-			
 
 	}	
 
 	void print()
 	{
-	for(int i = 0; i < numVertices; i++)
-	{
-		printf("u = %d ",i);
-		for(int j = 0; j < getLength(i);j++)
-	 		printf("dest = %d, h = %d, pre = %d; ", neighbours[i][j].vertex, vertices[neighbours[i][j].vertex].h, vertices[neighbours[i][j].vertex].pre_flow);
-		printf("\n");
+		for(int i = 0; i < numVertices; i++)
+		{
+	// 	printf("u = %d",i);
+	 	for(int j = 0; j < getLength(i);j++)
+	 		//printf("dest = %d, cap = %d; ", neighbours[i][j], getCap(i,j));
+	// 	printf("\n");
 	// 	}
 	// 			//printf("u = %d, v = %d, h = %d, cf = %d \n",i, neighbours[i][j],)
-	// 		//printf("i=%d, preflux = %d, height = %d\n",i, vertices[i].pre_flow, vertices[i].h);
-	}
+	 		printf("i=%d, j= %d, preflux = %d, height = %d\n",i,getNeigh(i,j), vertices[getNeigh(i,j)].pre_flow, vertices[getNeigh(i,j)].h);
+		 }
 	}
 };
 
@@ -333,19 +326,19 @@ int main()
 
 
 	scanf("%d %d %d", &f, &e, &t);
-	
+	int source = 0; //vertice source
 	//source-fornecedores- 2*estacoes - hiper
 	vertices = 1 + f + 2*e + 1;
-	int source= vertices-1; //vertice final
+	
 
 	Graph graph(vertices, e, f);
 
-	//liga o vertice final aos fornecedores
+	//liga o vertice source aos fornecedores
 	for(int i = 1; i < f+1; i++)
 	{
 		scanf("%d", &cap);
 
-		graph.addEdge(vertices-i, source, cap);
+		graph.addEdge(source, i, cap);
 		
 	}
 	int j = 0;
@@ -354,9 +347,8 @@ int main()
 	{	
 
 		scanf("%d", &cap);
-		graph.addEdge(vertices-i-1,vertices - i-2, cap);
-		graph.addStation(vertices-i-1,vertices- i-2, j);
-		printf("%d %d\n", vertices-i-1, vertices-i-2);	
+		graph.addEdge(i, i+1, cap);
+		graph.addStation(i, i+1, j);		
 		j++;
 	}
 
@@ -366,24 +358,23 @@ int main()
 		scanf("%d %d %d", &x, &y, &cap);
 		
 		//se for uma ligacao a partir de um abastecimento, incrementar para ficar no vertice certo
-		
-		x = vertices - x-1;
-		y = vertices -y -1;
-
-		if(y == vertices -2)
-			y=0;
-		else if(y < vertices-f-1)
-			y = graph.getY(e-(y%e)-1);
-			//y = graph.getY(y-f-1);
+		x--;
+		y--;
+		if(y == 0)
+			//hiper no fim da lista
+			y = f+2*e+1;
+		else if(y > f)
+			y = graph.getY(y-f-1);
 		
 
-		if(x< vertices- f-1)
-			x = graph.getX(e-(x%e)-1);
+		if(x> f)
+			x = graph.getX(x-f-1);
 		
 		graph.addEdge(x, y, cap);
 	}
 	//graph.print();
 	printf("%d\n", graph.relabelToFront());
+	//graph.print();
 	//graph.minimumCut();
 	return 0;
 }
