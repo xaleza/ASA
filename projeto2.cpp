@@ -74,8 +74,8 @@ public:
 	{
 		edges.push_back(Edge(cap,cap));
 
-		neighbours[u].push_back(Neighbour(v,edges.size()-1,true));
-		neighbours[v].push_back(Neighbour(u,edges.size()-1,false));
+		neighbours[u].push_back(Neighbour(v,edges.size()-1,false));
+		neighbours[v].push_back(Neighbour(u,edges.size()-1,true));
 	}
 
 	void addStation(int i, int inc, int j)
@@ -153,7 +153,7 @@ public:
 
 	void preflow()
 	{
-		int s = 0;
+		int s = numVertices-1;
 		vertices[s].h = numVertices;
 		for(int i = 0; i < getLength(s); i++)
 		{
@@ -245,7 +245,7 @@ public:
 			u = L[index];
 		}
 
-		return vertices[numVertices-1].pre_flow;
+		return vertices[0].pre_flow;
 	}
 
 	void minimumCut()
