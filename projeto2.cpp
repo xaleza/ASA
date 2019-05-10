@@ -39,12 +39,13 @@ private:
 	/* data */
 	int numVertices;
 	std::vector<Vertex> vertices;
+	std::vector<vector<int> > stations;
 	std::vector<vector<int> > neighbours;
 	std::vector<vector<Edge> > edges;
 	std::vector<int> L; 
 
 public:
-	Graph(int v)
+	Graph(int v, int e)
 	{
 		numVertices = v;
 		for(int i=0; i < numVertices; i++)
@@ -52,6 +53,7 @@ public:
 		neighbours.resize(numVertices);
 		edges.resize(numVertices);
 		L.resize(numVertices-2);
+		stations.resize(e);
 	}
 	//~Graph();
 
@@ -64,14 +66,29 @@ public:
 		edges[v].push_back(Edge(cap, 0, false));
 	}
 
+	void addStation(int i, int inc, int j)
+	{
+		stations[j].push_back(i);
+		stations[j].push_back(inc);
+	}
+
+	int getX(int pos)
+	{
+		return stations[pos][1];
+	}
+	int getY(int pos)
+	{
+		return stations[pos][0];
+	}
+
 	int getLength(int i)
 	{
 		return neighbours[i].size();
 	}
 
-	Vertex getNeigh(int i, int j)
+	int getNeigh(int i, int j)
 	{
-		return vertices[neighbours[i][j]];
+		return neighbours[i][j];
 	}
 
 	int getHeight(int i)
@@ -191,8 +208,13 @@ public:
 	{
 		for(int i = 0; i < numVertices; i++)
 		{
-			printf("i=%d, preflux = %d, height = %d\n",i, vertices[i].pre_flow, vertices[i].h);
+		printf("u = %d",i);
+		for(int j = 0; j < getLength(i);j++)
+			printf("dest = %d, cap = %d; ", neighbours[i][j], getCap(i,j));
+		printf("\n");
 		}
+				//printf("u = %d, v = %d, h = %d, cf = %d \n",i, neighbours[i][j],)
+			//printf("i=%d, preflux = %d, height = %d\n",i, vertices[i].pre_flow, vertices[i].h);
 	}
 };
 
@@ -210,29 +232,30 @@ int main()
 
 
 	scanf("%d %d %d", &f, &e, &t);
-
 	int source = 0; //vertice source
 	//source-fornecedores- 2*estacoes - hiper
 	vertices = 1 + f + 2*e + 1;
 	
 
-	Graph graph(vertices);
+	Graph graph(vertices, e);
 
 	//liga o vertice source aos fornecedores
 	for(int i = 1; i < f+1; i++)
 	{
 		scanf("%d", &cap);
-	
+
 		graph.addEdge(source, i, cap);
 		
 	}
-
+	int j = 0;
 	//transforma os pts de abastecimento em dois vertices
 	for(int i = f+1; i < f+1+2*e; i+=2)
-	{
-		scanf("%d", &cap);
+	{	
 
+		scanf("%d", &cap);
 		graph.addEdge(i, i+1, cap);
+		graph.addStation(i, i+1, j);		
+		j++;
 	}
 
 	//trata das ligacoes
@@ -242,22 +265,21 @@ int main()
 		
 		//se for uma ligacao a partir de um abastecimento, incrementar para ficar no vertice certo
 		x--;
-		if(y == 1)
+		y--;
+		if(y == 0)
 			//hiper no fim da lista
 			y = f+2*e+1;
-		else
-		{
-			y--;
-		}
+		else if(y > f)
+			y = graph.getY(y-f-1);
 		
-		if(x > f)
-		{
-			x++;
-		}
+
+		if(x> f)
+			x = graph.getX(x-f-1);
+		
 		graph.addEdge(x, y, cap);
 	}
-
-	printf("Max flow = %d\n", graph.relabelToFront());
-	graph.print();
+	//graph.print();
+	
+	printf("%d\n", graph.relabelToFront());
 	return 0;
 }
