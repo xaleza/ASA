@@ -54,7 +54,7 @@ private:
 	std::vector<vector<int> > stations;
 	std::vector<vector<Neighbour> > neighbours;
 	std::vector<Edge> edges;
-	std::vector<int> L; 
+	std::queue<int> L; 
 
 public:
 	Graph(int v, int e, int f)
@@ -65,7 +65,6 @@ public:
 		for(int i=0; i < numVertices; i++)
 			vertices.push_back(Vertex(0, 0));
 		neighbours.resize(numVertices);
-		L.resize(numVertices-2);
 		stations.resize(e);
 	}
 	//~Graph();
@@ -160,6 +159,7 @@ public:
 			vertices[getNeighbourVertex(s,i)].pre_flow = edges[getEdgeIndex(s, i)].cap;
 			vertices[s].pre_flow -= edges[getEdgeIndex(s, i)].cap;
 			edges[getEdgeIndex(s,i)].cf =0;
+			L.push(getNeigh(s,i));
 		}
 	}
 
@@ -178,6 +178,9 @@ public:
 	{
 		int flow;
 		int edgeIndex= getEdgeIndex(u, index);
+		
+		if(vertices[getNeigh(u,index)].pre_flow ==0 && getNeigh(u,index)>0)
+			L.push(getNeigh(u,index));
 		
 		if(neighbours[u][index].forward)
 		{
@@ -217,86 +220,23 @@ public:
 			}
 			
 		}
+		L.pop();
 	}
 
 	int relabelToFront(){
-		int index = 0;
 		int u, oldh;
 		preflow();
 		
-		for(int i = 0; i < numVertices - 2; i++)
-			L[i] = i+1;
-		
-		u = L[0];
-		while(index < numVertices-2)
+		while(!L.empty())
 		{	
-			oldh = getHeight(u);
+			u = L.front();
 			discharge(u);
-			if(vertices[u].h > oldh)
-			{
-				for(int i=index; i > 0; i--)
-				{	
-					L[i]= L[i-1];
-				}
-				L[0] = u;
-				index = 0;
-			}
-			index++;
-			u = L[index];
 		}
 
 		return vertices[0].pre_flow;
 	}
 
-	void minimumCut()
-	{
-		std::vector<bool> visited;
-		std::vector<int> lastVertices;
-		std::vector<int> lastStations;
-		visited.resize(numVertices);
-		bool hasVisitedCh = false;
-
-		queue <int> queue;
-		queue.push(numVertices-1);
-		visited[numVertices-1] = true;
-
-		while(!queue.empty())
-		{	
-			hasVisitedCh = false;
-			int curr = queue.front();
-			queue.pop();
-			int len = getLength(curr);
-
-			for(int i =0; i < len; i++)
-			{
-				if(!visited[i] && getCf(getEdgeIndex(curr, i))>0)
-				{
-					queue.push(i);
-					visited[i] = true;
-					hasVisitedCh= true;
-				}
-			}
-			if(!hasVisitedCh)
-			{
-				if(!isStationEntry(curr))
-					lastStations.push_back(curr);
-				else
-					lastVertices.push_back(curr);
-			}
-			std::sort(lastStations.begin(), lastStations.end());
-			
-			if(lastStations.size()>0)
-				printf("%d", lastStations[0]);
 	
-			for(int i = 1; i < lastStations.size(); i++)
-				printf(" %d", lastStations[i]);
-
-			printf("\n");
-			
-		}
-
-	}
-
 	void cut(){
 
 		std::vector<bool> over;
@@ -335,6 +275,11 @@ public:
 		printf("\n");
 
 		for(int i = 1; i<numVertices-1; i++){
+			for(int j = 0; j<getLength(i); j++){
+				//N sei se era bem esta condicao mas n ta a dar
+				if(neighbours[i][j].forward && over[i] && !over[getNeigh(i,j)])
+					printf("%d %d\n",i, getNeigh(i,j));
+			}
 			//ver se o i esta over e o vizinho nao
 			//mas so se de i para o vizinho for forward
 			// dar print de i (origem) e vizinho (destino) \n
