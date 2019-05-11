@@ -335,7 +335,7 @@ public:
 		printf("\n");
 
 		for(int i = 1; i<numVertices-1; i++){
-			//ver se o i esta de um lado e o vizinho esta do outro
+			//ver se o i esta over e o vizinho nao
 			//mas so se de i para o vizinho for forward
 			// dar print de i (origem) e vizinho (destino) \n
 		}
