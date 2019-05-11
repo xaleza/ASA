@@ -54,7 +54,8 @@ private:
 	std::vector<vector<int> > stations;
 	std::vector<vector<Neighbour> > neighbours;
 	std::vector<Edge> edges;
-	std::queue<int> L; 
+	std::queue<int> L;
+	std::vector<int> abastMap;
 
 public:
 	Graph(int v, int e, int f)
@@ -150,6 +151,21 @@ public:
 		return false;
 	}
 
+	void mapAbast(){
+		abastMap.resize(numVertices); 
+
+		int inV;
+		int outV;
+
+		for(int i=0; i<numStations; i++){
+			inV = stations[i][0];
+			outV = stations[i][1];
+
+			abastMap[inV] = i+numSuppliers+2;
+			abastMap[outV] = i+numSuppliers+2;
+		}
+	}
+
 	void preflow()
 	{
 		int s = numVertices-1;
@@ -224,7 +240,7 @@ public:
 	}
 
 	int relabelToFront(){
-		int u, oldh;
+		int u;
 		preflow();
 		
 		while(!L.empty())
@@ -247,45 +263,121 @@ public:
 			over[i]=false;
 		}
 
-		for(int i=1; i<numVertices-1; i++){
-			if(vertices[i].h > numVertices)
+		over[numVertices-1]=true;
+
+		bool allOver=true;
+
+		for(int i=0; i<numVertices-1; i++){
+			//printf("vertex %d height %d\n", i, vertices[i].h);
+			if(vertices[i].h >= numVertices)
 				over[i]=true;
+			else
+				allOver=false;
 		}
 
-		int inV;
-		int outV;
 
-		for(int i=0; i<numStations; i++){
-			inV = stations[i][0];
-			outV = stations[i][1];
+		/* for(int i=0; i<numVertices; i++){
+			int n;
+			if(over[i])
+				n=1;
+			else
+				n=0;
 
-			if(over[outV] && !over[inV]){//se o unico q esta por cima e' o vertice de
-				cutAbast.push_back(inV);//abastecimento do lado direito aka o corte passa no abastecimento
+			printf("vertice %d : bool %d \n", i, n);
+		} */
+
+		if(!allOver){
+			int inV;
+			int outV;
+
+			for(int i=0; i<numStations; i++){
+				inV = stations[i][0];
+				outV = stations[i][1];
+
+				if(over[outV] && !over[inV]){//se o unico q esta por cima e' o vertice de
+					cutAbast.push_back(abastMap[inV]);//abastecimento do lado direito aka o corte passa no abastecimento
+				}
+			}
+
+			/* for(int i=0; i<numVertices; i++){
+				printf("vertex %d abastPt %d\n", i, abastMap[i]);
+			} */
+
+			int cutAbastSize = cutAbast.size();
+			if(cutAbastSize>0){
+				printf("%d", cutAbast[0]);
+			}
+
+			for(int i=1; i<cutAbastSize; i++){
+				printf(" %d", cutAbast[i]);
+			}
+
+			printf("\n");
+
+			std::vector<pair<int,int>> toIncrease;
+
+			for(int i = 0; i<numVertices; i++){
+				for(int j = 0; j<getLength(i); j++){
+					if(!(neighbours[i][j].forward) && !over[i] && over[getNeigh(i,j)] && i!=0){
+						if(getNeigh(i,j) == numVertices-1){
+							if(i>numSuppliers)//imprimir o nr deles do vertice de abast
+								printf("%d 1\n", abastMap[i]);
+							else
+								printf("%d 1\n",i+1);
+						}
+						else{
+							if(!(i>numSuppliers && getNeigh(i,j)>numSuppliers)){
+								if(i>numSuppliers)//primeiro e pt de abast
+									toIncrease.push_back(std::make_pair(abastMap[i],getNeigh(i,j)+1));
+									
+								else if(getNeigh(i,j)>numSuppliers)//segundo e pt de abast
+									toIncrease.push_back(std::make_pair(i+1,abastMap[getNeigh(i,j)]));
+
+								else//nenhum e pt de abast
+									toIncrease.push_back(std::make_pair(i+1,getNeigh(i,j)+1));
+
+							}	
+							else if(abastMap[i]!=abastMap[getNeigh(i,j)])//ambos sao pts de abast diferentes
+								toIncrease.push_back(std::make_pair(abastMap[i],abastMap[getNeigh(i,j)]));
+						}
+					}
+
+
+					/* int n;
+					printf("checking edge %d to %d \n", i, getNeigh(i,j));
+					if(!(neighbours[i][j].forward))
+						n=1;
+					else
+						n=0;
+					printf("edge is not forward bool: %d \n", n);
+					if(over[i])
+						n=1;
+					else
+						n=0;
+					printf("%d is over bool: %d\n", i, n);
+					if(over[getNeigh(i,j)])
+						n=1;
+					else
+						n=0;
+					printf("%d is over bool: %d\n", getNeigh(i,j), n); */
+				}
+			}
+			std::sort(toIncrease.begin(), toIncrease.end(), compare);
+
+			int toIncreaseSize = toIncrease.size();
+			for(int i=0; i<toIncreaseSize; i++){
+				printf("%d %d\n", toIncrease[i].first, toIncrease[i].second);
 			}
 		}
-
-		if(cutAbast.size()>0){
-			printf("%d", cutAbast[0]);
-		}
-
-		for(int i=1; i<cutAbast.size(); i++){
-			printf(" %d", cutAbast[i]);
-		}
-
-		printf("\n");
-
-		for(int i = 1; i<numVertices-1; i++){
-			for(int j = 0; j<getLength(i); j++){
-				//N sei se era bem esta condicao mas n ta a dar
-				if(neighbours[i][j].forward && over[i] && !over[getNeigh(i,j)])
-					printf("%d %d\n",i, getNeigh(i,j));
-			}
-			//ver se o i esta over e o vizinho nao
-			//mas so se de i para o vizinho for forward
-			// dar print de i (origem) e vizinho (destino) \n
-		}
-
 	}	
+
+	static bool compare(const pair<int, int>&i, const pair<int, int>&j){
+		if(i.first!=j.first)
+			return i.first<j.first;
+
+		return i.second<j.second;
+	}
+		
 
 	void print()
 	{
@@ -313,9 +405,10 @@ int main()
 	int t = 0; //numero de ligacoes
 	int vertices = 0;
 	int cap;
+	int capScanf;
 
 
-	scanf("%d %d %d", &f, &e, &t);
+	capScanf=scanf("%d %d %d", &f, &e, &t);
 	int source = 0; //vertice source
 	//source-fornecedores- 2*estacoes - hiper
 	vertices = 1 + f + 2*e + 1;
@@ -326,7 +419,7 @@ int main()
 	//liga o vertice source aos fornecedores
 	for(int i = 1; i < f+1; i++)
 	{
-		scanf("%d", &cap);
+		capScanf=scanf("%d", &cap);
 
 		graph.addEdge(source, i, cap);
 		
@@ -336,7 +429,7 @@ int main()
 	for(int i = f+1; i < f+1+2*e; i+=2)
 	{	
 
-		scanf("%d", &cap);
+		capScanf=scanf("%d", &cap);
 		graph.addEdge(i, i+1, cap);
 		graph.addStation(i, i+1, j);		
 		j++;
@@ -345,7 +438,7 @@ int main()
 	//trata das ligacoes
 	for(int i = 0; i < t; i++)
 	{
-		scanf("%d %d %d", &x, &y, &cap);
+		capScanf=scanf("%d %d %d", &x, &y, &cap);
 		
 		//se for uma ligacao a partir de um abastecimento, incrementar para ficar no vertice certo
 		x--;
@@ -362,11 +455,12 @@ int main()
 		
 		graph.addEdge(x, y, cap);
 	}
-	//graph.print();
+
 	printf("%d\n", graph.relabelToFront());
+	graph.mapAbast();
 	graph.cut();
 
-	//graph.print();
-	//graph.minimumCut();
-	return 0;
+
+	if(capScanf)
+		return 0;
 }
