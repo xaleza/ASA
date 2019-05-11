@@ -295,6 +295,51 @@ public:
 			
 		}
 
+	}
+
+	void cut(){
+
+		std::vector<bool> over;
+		over.resize(numVertices);
+		std::vector<int> cutAbast;
+
+		for(int i=0; i<numVertices; i++){
+			over[i]=false;
+		}
+
+		for(int i=1; i<numVertices-1; i++){
+			if(vertices[i].h > numVertices)
+				over[i]=true;
+		}
+
+		int inV;
+		int outV;
+
+		for(int i=0; i<numStations; i++){
+			inV = stations[i][0];
+			outV = stations[i][1];
+
+			if(over[outV] && !over[inV]){//se o unico q esta por cima e' o vertice de
+				cutAbast.push_back(inV);//abastecimento do lado direito aka o corte passa no abastecimento
+			}
+		}
+
+		if(cutAbast.size()>0){
+			printf("%d", cutAbast[0]);
+		}
+
+		for(int i=1; i<cutAbast.size(); i++){
+			printf(" %d", cutAbast[i]);
+		}
+
+		printf("\n");
+
+		for(int i = 1; i<numVertices-1; i++){
+			//ver se o i esta de um lado e o vizinho esta do outro
+			//mas so se de i para o vizinho for forward
+			// dar print de i (origem) e vizinho (destino) \n
+		}
+
 	}	
 
 	void print()
@@ -374,6 +419,8 @@ int main()
 	}
 	//graph.print();
 	printf("%d\n", graph.relabelToFront());
+	graph.cut();
+
 	//graph.print();
 	//graph.minimumCut();
 	return 0;
